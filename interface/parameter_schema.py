@@ -215,15 +215,31 @@ class SamplingControlParameters:
 class RDEEParameterSchema:
     """Root schema containing all parameter groups for RDEE."""
 
-    cosmological: CosmologicalParameters = field(default_factory=CosmologicalParameters)
-    stellar: StellarParameters = field(default_factory=StellarParameters)
-    planetary: PlanetaryParameters = field(default_factory=PlanetaryParameters)
-    habitability: HabitabilityParameters = field(default_factory=HabitabilityParameters)
-    prebiotic: PrebioticChemistryParameters = field(default_factory=PrebioticChemistryParameters)
-    evolutionary: EvolutionaryParameters = field(default_factory=EvolutionaryParameters)
-    sampling: SamplingControlParameters = field(default_factory=SamplingControlParameters)
+    cosmological: CosmologicalParameters = field(
+        default_factory=CosmologicalParameters
+    )
+    stellar: StellarParameters = field(
+        default_factory=StellarParameters
+    )
+    planetary: PlanetaryParameters = field(
+        default_factory=PlanetaryParameters
+    )
+    habitability: HabitabilityParameters = field(
+        default_factory=HabitabilityParameters
+    )
+    prebiotic: PrebioticChemistryParameters = field(
+        default_factory=PrebioticChemistryParameters
+    )
+    evolutionary: EvolutionaryParameters = field(
+        default_factory=EvolutionaryParameters
+    )
+    sampling: SamplingControlParameters = field(
+        default_factory=SamplingControlParameters
+    )
 
     def clone(self) -> "RDEEParameterSchema":
-        """Return a deep-copy clone of the current parameter schema, safe for independent simulation mutation."""
-        return copy.deepcopy(self)
+        """Return a deep-copy clone of the current parameter schema.
 
+        The returned copy can be safely mutated independent of the original.
+        """
+        return copy.deepcopy(self)

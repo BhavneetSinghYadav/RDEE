@@ -33,7 +33,8 @@ def get_nested_field(dataclass_obj: Any, field_path: str) -> Any:
     current = dataclass_obj
     for part in field_path.split('.'):
         if not hasattr(current, part):
-            raise AttributeError(f"Invalid field path '{field_path}' at '{part}'")
+            msg = f"Invalid field path '{field_path}' at '{part}'"
+            raise AttributeError(msg)
         current = getattr(current, part)
     return current
 
@@ -64,7 +65,8 @@ def set_nested_field(dataclass_obj: Any, field_path: str, value: Any) -> None:
     for idx, part in enumerate(parts):
         is_last = idx == len(parts) - 1
         if not hasattr(current, part):
-            raise AttributeError(f"Invalid field path '{field_path}' at '{part}'")
+            msg = f"Invalid field path '{field_path}' at '{part}'"
+            raise AttributeError(msg)
         if is_last:
             attr = getattr(current, part)
             if isinstance(attr, ParameterSpec) and len(parts) - idx == 1:
@@ -75,7 +77,9 @@ def set_nested_field(dataclass_obj: Any, field_path: str, value: Any) -> None:
             current = getattr(current, part)
 
 
-def generate_parameter_grid(base_schema: RDEEParameterSchema, sweep_config: dict) -> List[RDEEParameterSchema]:
+def generate_parameter_grid(
+    base_schema: RDEEParameterSchema, sweep_config: dict
+) -> List[RDEEParameterSchema]:
     """Generate a list of schemas for all combinations in ``sweep_config``.
 
     Parameters
