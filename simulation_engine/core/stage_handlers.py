@@ -128,7 +128,18 @@ def evaluate_habitability(parameters: RDEEParameterSchema) -> bool:
         return False
 
     if zone.default is not None and planet_distance.default is not None:
-        if not survival_window(planet_distance.default, zone.default):
+        window_ratio = (
+            parameters.sampling.survival_corridor_sensitivity_window.default
+            if parameters.sampling.survival_corridor_sensitivity_window.default
+            is not None
+            else 0.1
+        )
+        ok = survival_window(
+            planet_distance.default,
+            zone.default,
+            window_ratio,
+        )
+        if not ok:
             return False
 
     return True
