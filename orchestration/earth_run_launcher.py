@@ -2,16 +2,16 @@ from __future__ import annotations
 
 """Launcher for Earth parameter simulation batches."""
 
-from uuid import uuid4
+import os
 
 from interface.earth_parameter_instance import get_earth_parameters
-from interface.parameter_schema import RDEEParameterSchema
-from orchestration import validator_adapter, run_manager, execution_monitor
+from orchestration.execution_monitor import ExecutionMonitor
+from orchestration import validator_adapter, run_manager
 from storage import data_pipeline
 
 
-def run_earth_simulation(batch_size: int, output_dir: str) -> None:
-    """Execute the Earth simulation batch and store results.
+def run_earth_simulation(batch_size: int, output_dir: str) -> ExecutionMonitor:
+    """Execute a batch of Earth-parameter simulations and store results.
 
     Parameters
     ----------
@@ -19,38 +19,48 @@ def run_earth_simulation(batch_size: int, output_dir: str) -> None:
         Number of identical Earth parameter runs to execute.
     output_dir:
         Directory where simulation outputs will be stored.
+
+    Returns
+    -------
+    ExecutionMonitor
+        Monitoring object summarizing the execution outcome.
     """
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
 
-    monitor = execution_monitor.ExecutionMonitor()
-    base_parameters = get_earth_parameters()
+    mon = ExecutionMonitor()
+    os.makedirs(output_dir, exist_ok=True)
 
-    for _ in range(batch_size):
-        parameters: RDEEParameterSchema = base_parameters.clone()
-        valid = False
+    for idx in range(batch_size):
+        params = get_earth_parameters()
+        mon.register_validation(True)
+
         try:
-            validator_adapter.validate_full_parameters(parameters)
-            valid = True
-        except Exception:
-            valid = False
-        monitor.register_validation(valid)
-        if not valid:
-            continue
-        try:
-            result = run_manager.execute_simulation_run(parameters)
-        except Exception:
-            monitor.register_storage(False)
+            validator_adapter.validate_full_parameters(params)
+        except Exception as e:
+            mon.failed_validations += 1
+            mon.register_validation(False)
+            print(f"[{idx}] validation failed:", e)
             continue
 
-        run_id = result.get("trace_id", uuid4().hex)
-        depth = int(result.get("recursion_depth", 0))
         try:
-            data_pipeline.save_simulation_run(run_id, parameters, result, output_dir)
-            monitor.register_storage(True)
-        except Exception:
-            monitor.register_storage(False)
-        monitor.register_depth(depth)
+            trace = run_manager.execute_simulation_run(params)
+            depth = int(trace.get("recursion_depth", 0))
+            mon.register_depth(depth)
+
+            data_pipeline.save_simulation_run(
+                run_id=trace["trace_id"],
+                parameters=params,
+                result=trace,
+                output_dir=output_dir,
+            )
+            mon.register_storage(True)
+
+        except Exception as e:
+            mon.register_storage(False)
+            print(f"[{idx}] storage or recursion failed:", e)
+
+    return mon
 
 
 def main() -> None:
