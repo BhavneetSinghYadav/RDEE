@@ -57,18 +57,23 @@ def _dict_to_dataclass(data: Dict[str, Any], cls: Type[T]) -> T:
 
 
 def _write_json_dataset(group: h5py.Group, name: str, obj: Any) -> None:
-    """Helper to write JSON-serialized object to dataset."""
+    """Write a JSON-serialized representation of ``obj`` to ``name``."""
     json_str = json.dumps(obj)
     dtype = h5py.string_dtype(encoding="utf-8")
     group.create_dataset(name, data=json_str, dtype=dtype)
 
 
 def _read_json_dataset(group: h5py.Group, name: str) -> Any:
-    """Helper to read JSON-serialized object from dataset."""
+    """Read a JSON-serialized object stored under ``name``."""
     data = group[name][()]
     if isinstance(data, bytes):
         data = data.decode("utf-8")
     return json.loads(data)
+
+
+def _schema_dict_to_object(d: Dict[str, Any]) -> RDEEParameterSchema:
+    """Rebuild ``RDEEParameterSchema`` from a plain dictionary."""
+    return _dict_to_dataclass(d, RDEEParameterSchema)
 
 
 def save_simulation_run(
@@ -97,10 +102,15 @@ def save_simulation_run(
     file_path = os.path.join(output_dir, f"{run_id}.h5")
 
     param_dict = _dataclass_to_dict(parameters)
+    param_json = json.dumps(param_dict)
+    result_json = json.dumps(result)
 
     with h5py.File(file_path, "w") as h5f:
-        _write_json_dataset(h5f, "parameters", param_dict)
-        _write_json_dataset(h5f, "result", result)
+        trace = h5f.create_group("trace")
+        trace.attrs["schema_version"] = "1"
+        dtype = h5py.string_dtype("utf-8")
+        trace.create_dataset("parameters_json", data=param_json, dtype=dtype)
+        trace.create_dataset("result_json", data=result_json, dtype=dtype)
 
 
 def load_simulation_run(run_id: str, output_dir: str) -> Tuple[RDEEParameterSchema, dict]:
@@ -123,8 +133,17 @@ def load_simulation_run(run_id: str, output_dir: str) -> Tuple[RDEEParameterSche
         raise FileNotFoundError(f"Simulation run file '{file_path}' does not exist")
 
     with h5py.File(file_path, "r") as h5f:
-        param_dict = _read_json_dataset(h5f, "parameters")
-        result = _read_json_dataset(h5f, "result")
+        trace = h5f["trace"]
+        param_data = trace["parameters_json"][()]
+        result_data = trace["result_json"][()]
 
-    parameters = _dict_to_dataclass(param_dict, RDEEParameterSchema)
+    if isinstance(param_data, bytes):
+        param_data = param_data.decode("utf-8")
+    if isinstance(result_data, bytes):
+        result_data = result_data.decode("utf-8")
+
+    param_dict = json.loads(param_data)
+    result = json.loads(result_data)
+
+    parameters = _schema_dict_to_object(param_dict)
     return parameters, result
