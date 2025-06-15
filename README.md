@@ -2,107 +2,117 @@
 
 ---
 
-**A Modular Scientific Simulation Platform for Recursive Conditional Existence Filtering**
+**Phase: v1.1 — Recursive Engine Lockpoint Achieved**
 
 ---
 
 ## Project Summary
 
-RDEE models the recursive emergence, filtering, survival, and collapse of complex existence systems across layered ontologies:
+RDEE models the recursive conditional survival, collapse, and bifurcation of existence regimes across layered ontologies of emergence:
 
-- Cosmological substrate generation
-- Planetary formation filtering
-- Chemical emergence probabilities
-- Biological evolutionary fragilities
-- Recursive meta-conditional survival chains
+- Cosmological constants
+- Stellar formation filters
+- Planetary viability constraints
+- Prebiotic chemical conditions
+- Evolutionary fragility thresholds
 
-The engine is designed for controlled high-dimensional simulations of existence-phase space topologies.
-
-This repository implements the full simulation core, recursive bifurcation models, parameter expansion, sampling architecture, storage pipeline, monitoring, and visualization layers — all under strict epistemic build protocols.
+The system operates as a modular epistemically-controlled scientific existence simulation framework.
 
 ---
 
-## Current System State (v1.1 Stabilization Phase)
+## Current Build Status (v1.1 Complete)
 
-- ✅ Full module decomposition implemented
-- ✅ Interface layer schema established
-- ✅ Physical & sanity validation layers operational
-- ✅ Sampling layer bootstrapped (uniform random)
-- ✅ Monitoring layer initialized
-- ✅ Data pipeline implemented (HDF5)
-- ✅ Visualization layer initialized (survival heatmaps)
-- ✅ Full epistemic build protocols encoded in AGENTS.md
-- ✅ Epistemic safety patches applied (shared defaults fixed)
+| Subsystem | Status |
+|------------|--------|
+| Interface Layer | ✅ Implemented |
+| Validation Layer | ✅ Implemented |
+| Sampling Layer | ✅ Implemented |
+| Storage Layer | ✅ Implemented |
+| Monitoring Layer | ✅ Implemented |
+| Visualization Layer | ✅ Implemented |
+| Testing Layer | ✅ Implemented |
+| Recursive Simulation Engine | ✅ Fully built |
+| Trace Logging System | ✅ Fully built |
+| Epistemic Build Protocols | ✅ Fully governed |
+
+---
+
+## What the System Currently Supports
+
+- ✅ Modular parameter schema architecture (`parameter_schema.py`)
+- ✅ Full validation pipeline (physics + sanity layers)
+- ✅ Sampling engine for recursive instantiation
+- ✅ Storage pipeline (HDF5-based persistent traces)
+- ✅ Runtime monitoring hooks
+- ✅ Scientific visualization engine (survival heatmaps)
+- ✅ Full deterministic recursion kernel:
+  - Recursive depth control
+  - Multi-stage conditional filtering
+  - Survival bifurcation handling
+  - Controlled recursive existence-phase exploration
+- ✅ Trace logging system for full existence pathway reconstruction
+- ✅ Fully verified unit test suite for all modules
 
 ---
 
 ## Repository Structure
 
-- `interface/` — Parameter schemas, user input, sweep expansion
-- `validation/` — Physics constraints, sanity checks, master validator
-- `sampling/` — Sampling controllers and future adaptive samplers
-- `storage/` — Storage pipeline (HDF5 persistence)
-- `monitoring/` — Runtime state monitoring
-- `visualization/` — Existence heatmap generators
-- `simulation_engine/core/` — (Scaffolded, recursion engine to follow)
-- `orchestration/` — (Scaffolded, simulation orchestration to follow)
-- `tests/` — Full test suite (in construction)
-
----
-
-## Epistemic Build Contracts
-
-- All build protocols strictly governed via:
-  - `AGENTS.md` (architectural rules, file boundaries, library controls)
-  - `MODULE_EXTENSION.md` (extension protocols)
-  - `PARAMETER_SCHEMA.md` (parameter set definitions)
-
-- All module builds are conducted via controlled bounded Codex agents, under isolated file scopes.
-
-- All unit tests are being constructed under formalized `Test Build Kit v1.0`.
-
----
-
-## Current Limitations
-
-- No recursion core integrated yet (planned Phase 2)
-- No adaptive sampling logic yet
-- No full orchestration layer yet
-- No cluster-scale posterior integrations yet
-
----
-
-## Immediate Roadmap
-
-- ✅ Complete full unit test suite (Test Build Kit v1.0)
-- ✅ Lock recursion core safety protocols
-- ✅ Begin recursive bifurcation engine implementation
-- ✅ Launch controlled orchestration layer
-- ✅ Extend visualization pipeline into survival topology maps
+| Directory | Contents |
+|-----------|----------|
+| interface/ | Parameter schema, user input loader, parameter expansion |
+| validation/ | Physics constraints, sanity checks, master validator |
+| sampling/ | Sampling controller |
+| storage/ | Data persistence pipeline |
+| monitoring/ | Runtime monitors |
+| visualization/ | Scientific heatmap generators |
+| simulation_engine/core/ | Recursion engine, stage handlers, bifurcation handler, survival filters, trace logger |
+| orchestration/ | (Prepared for Batch Controller in Phase 3) |
+| tests/ | Full unit test suite |
+| protocols/ | AGENTS.md, MODULE_EXTENSION.md, PARAMETER_SCHEMA.md |
 
 ---
 
 ## System Build Philosophy
 
-RDEE is designed for:
+- Modular recursive epistemic safety
+- Strict file-boundary isolation
+- Full scientific reproducibility
+- Controlled Codex build agent execution
+- Zero speculative automation; all extensions are epistemically verified
 
-- Recursive epistemic safety
-- Strict modular isolation
-- Controlled build determinism
-- Scientific reproducibility
+---
+
+## Current Limitations (Pre-Orchestration Phase)
+
+- No full orchestration layer yet
+- No batch-scale parameter sweep controller
+- No adaptive sampling or survival-density prioritization
+- No existence phase-space sensitivity amplification yet
+- No dynamic parameter entanglement modeling yet
+
+---
+
+## Next Immediate Development Phase
+
+**RDEE Build Kit v3.0 — Orchestration Layer Deployment**
+
+- Central simulation run manager
+- Batch control pipeline
+- Parallelization hooks for multiple recursive runs
+- Storage linkage to persistent trace archive
+- Prepare adaptive sampling for Build Kit v4.0
 
 ---
 
 ## Licensing
 
-Currently in private research development phase under controlled access.
+Currently in private controlled research development.
 
 ---
 
 ## Collaboration
 
-This repository is under controlled epistemic development.  
-Collaborations may be considered post-stabilization of recursion core.
+Collaboration requests may be considered after Phase 3 system stabilization is achieved.
 
 ---
 
