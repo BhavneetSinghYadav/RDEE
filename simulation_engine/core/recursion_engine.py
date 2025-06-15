@@ -7,7 +7,7 @@ from typing import Any, Dict, Callable, Iterable, List
 from uuid import uuid4
 
 from interface.parameter_schema import RDEEParameterSchema
-from . import stage_handlers, survival_filter, collapse_logger, bifurcation_handler
+from . import stage_handlers, collapse_logger, bifurcation_handler
 
 
 def _serialize(obj: Any) -> Any:
@@ -59,50 +59,32 @@ def recursive_step(
     bool
         ``True`` if the branch survives through all stages.
     """
-    max_depth = current_parameters.sampling.recursive_depth_limit.default or 0
-    stages: Iterable[tuple[str, Callable[[RDEEParameterSchema], bool]]] = getattr(
-        stage_handlers, "STAGE_HANDLERS", {}
-    ).items()
+    ordered_stages: List[tuple[str, Callable[[RDEEParameterSchema], bool]]] = [
+        ("cosmological", stage_handlers.evaluate_cosmological),
+        ("stellar", stage_handlers.evaluate_stellar),
+        ("planetary", stage_handlers.evaluate_planetary),
+        ("habitability", stage_handlers.evaluate_habitability),
+        ("prebiotic", stage_handlers.evaluate_prebiotic),
+        ("evolutionary", stage_handlers.evaluate_evolutionary),
+    ]
 
-    for name, handler in stages:
-        try:
-            survived = bool(handler(current_parameters))
-        except Exception:
-            survived = False
-        record_trace(trace, name, survived)
-        if terminate_if_collapse(name, survived):
-            if hasattr(collapse_logger, "log_collapse"):
-                try:
-                    collapse_logger.log_collapse(trace, name)
-                except Exception:
-                    pass
+    for name, func in ordered_stages:
+        result = func(current_parameters)
+        collapse_logger.record_stage(trace, name, result)
+        if not result:
             return False
-        if hasattr(survival_filter, "apply_survival_filter"):
-            try:
-                survival_filter.apply_survival_filter(name, survived, current_parameters)
-            except Exception:
-                pass
 
-    if current_depth + 1 >= max_depth:
+    depth_limit = current_parameters.sampling.recursive_depth_limit.default
+    if current_depth + 1 >= depth_limit:
         return True
 
-    children: List[RDEEParameterSchema]
-    if hasattr(bifurcation_handler, "generate_branches"):
-        try:
-            children = list(
-                bifurcation_handler.generate_branches(current_parameters, current_depth + 1)
-            )
-        except Exception:
-            children = []
-    else:
-        children = []
-
-    if not children:
-        return recursive_step(current_depth + 1, current_parameters, trace)
-
-    for child in children:
-        recursive_step(current_depth + 1, child, trace)
-    return True
+    collapse_logger.increment_depth(trace)
+    children = bifurcation_handler.generate_bifurcations(
+        current_parameters, branching_factor=2, perturbation_scale=0.05
+    )
+    return any(
+        recursive_step(current_depth + 1, child, trace) for child in children
+    )
 
 
 def run_recursive_simulation(parameters: RDEEParameterSchema) -> Dict[str, Any]:
@@ -118,6 +100,7 @@ def run_recursive_simulation(parameters: RDEEParameterSchema) -> Dict[str, Any]:
     dict
         Trace dictionary containing survival information for all stages.
     """
-    trace = initialize_trace_object(parameters)
-    recursive_step(0, parameters, trace)
+    trace = collapse_logger.initialize_trace(parameters)
+    survived = recursive_step(0, parameters, trace)
+    collapse_logger.finalize_trace(trace, final_survival=survived)
     return trace
