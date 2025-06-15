@@ -3,7 +3,7 @@ from __future__ import annotations
 """Bifurcation utilities for parameter perturbations in recursive branching."""
 
 from dataclasses import asdict, fields, is_dataclass
-from typing import Any, List
+from typing import Any, List, get_type_hints
 import numpy as np
 
 from interface.parameter_schema import ParameterSpec, RDEEParameterSchema
@@ -26,11 +26,15 @@ def _dict_to_dataclass(data: Any, cls: type) -> Any:
     """
     if cls is ParameterSpec:
         return ParameterSpec(**data)
+
     if is_dataclass(cls):
+        type_hints = get_type_hints(cls)
         kwargs = {}
         for f in fields(cls):
-            kwargs[f.name] = _dict_to_dataclass(data[f.name], f.type)
+            resolved_type = type_hints.get(f.name, f.type)
+            kwargs[f.name] = _dict_to_dataclass(data[f.name], resolved_type)
         return cls(**kwargs)
+
     return data
 
 
