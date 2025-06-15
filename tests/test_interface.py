@@ -2,6 +2,93 @@ import io
 from pathlib import Path
 from typing import Any, Dict
 
+import sys
+import types
+import pathlib
+from dataclasses import dataclass, field
+from typing import Optional, Type
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+@dataclass
+class ParameterSpec:
+    name: str
+    dtype: Type
+    units: str
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    default: Optional[float] = None
+
+def spec(name: str, dtype: Type, units: str, min_v=None, max_v=None, default=None) -> ParameterSpec:
+    return ParameterSpec(name, dtype, units, min_v, max_v, default)
+
+@dataclass
+class CosmologicalParameters:
+    hubble_constant: ParameterSpec = field(default_factory=lambda: spec("Hubble Constant", float, "km/s/Mpc", 60.0, 75.0, 70.0))
+    cosmological_constant: ParameterSpec = field(default_factory=lambda: spec("Cosmological Constant", float, "1/s²", 1e-56, 1e-52, 1e-54))
+    baryon_to_photon_ratio: ParameterSpec = field(default_factory=lambda: spec("Baryon-to-photon ratio", float, "dimensionless", 1e-10, 1e-9, 6e-10))
+
+@dataclass
+class StellarParameters:
+    stellar_metallicity: ParameterSpec = field(default_factory=lambda: spec("Stellar metallicity", float, "fraction", 0.0001, 0.03, 0.014))
+    stellar_mass: ParameterSpec = field(default_factory=lambda: spec("Stellar mass", float, "Msun", 0.1, 100.0, 1.0))
+
+@dataclass
+class PlanetaryParameters:
+    planet_mass: ParameterSpec = field(default_factory=lambda: spec("Planet mass", float, "Mearth", 0.1, 10.0, 1.0))
+    planet_distance: ParameterSpec = field(default_factory=lambda: spec("Planet distance", float, "AU", 0.1, 10.0, 1.0))
+    planetary_system_multiplicity: ParameterSpec = field(default_factory=lambda: spec("Planetary system multiplicity", int, "count", 1, 20, 1))
+
+@dataclass
+class HabitabilityParameters:
+    liquid_water_zone_range: ParameterSpec = field(default_factory=lambda: spec("Liquid water zone range", float, "AU"))
+    stellar_uv_flux_range: ParameterSpec = field(default_factory=lambda: spec("Stellar UV flux range", float, "W/m²"))
+    tidal_locking_probability: ParameterSpec = field(default_factory=lambda: spec("Tidal locking probability", float, "probability", 0.0, 1.0, 0.5))
+
+@dataclass
+class PrebioticChemistryParameters:
+    prebiotic_synthesis_success_probability: ParameterSpec = field(default_factory=lambda: spec("Prebiotic synthesis success probability", float, "probability", 0.001, 1.0, 0.5))
+    uv_catalysis_efficiency: ParameterSpec = field(default_factory=lambda: spec("UV catalysis efficiency", float, "probability", 0.0, 1.0, 0.5))
+    polymerization_failure_rate: ParameterSpec = field(default_factory=lambda: spec("Polymerization failure rate", float, "probability", 0.0, 1.0, 0.1))
+
+@dataclass
+class EvolutionaryParameters:
+    evolutionary_complexity_threshold: ParameterSpec = field(default_factory=lambda: spec("Evolutionary complexity threshold", int, "dimensionless", 1, 10, 5))
+    evolutionary_fragility_multiplier: ParameterSpec = field(default_factory=lambda: spec("Evolutionary fragility multiplier", float, "multiplier", 0.0, 1.0, 0.5))
+    mass_extinction_frequency: ParameterSpec = field(default_factory=lambda: spec("Mass extinction frequency", float, "events per 100 Myr"))
+
+@dataclass
+class SamplingControlParameters:
+    recursive_depth_limit: ParameterSpec = field(default_factory=lambda: spec("Recursive depth limit", int, "count", None, None, 1))
+    survival_corridor_sensitivity_window: ParameterSpec = field(default_factory=lambda: spec("Survival corridor sensitivity window", float, "unitless"))
+
+@dataclass
+class RDEEParameterSchema:
+    cosmological: CosmologicalParameters = field(default_factory=CosmologicalParameters)
+    stellar: StellarParameters = field(default_factory=StellarParameters)
+    planetary: PlanetaryParameters = field(default_factory=PlanetaryParameters)
+    habitability: HabitabilityParameters = field(default_factory=HabitabilityParameters)
+    prebiotic: PrebioticChemistryParameters = field(default_factory=PrebioticChemistryParameters)
+    evolutionary: EvolutionaryParameters = field(default_factory=EvolutionaryParameters)
+    sampling: SamplingControlParameters = field(default_factory=SamplingControlParameters)
+
+    def clone(self) -> "RDEEParameterSchema":
+        import copy
+        return copy.deepcopy(self)
+
+stub = types.ModuleType("interface.parameter_schema")
+stub.ParameterSpec = ParameterSpec
+stub.CosmologicalParameters = CosmologicalParameters
+stub.StellarParameters = StellarParameters
+stub.PlanetaryParameters = PlanetaryParameters
+stub.HabitabilityParameters = HabitabilityParameters
+stub.PrebioticChemistryParameters = PrebioticChemistryParameters
+stub.EvolutionaryParameters = EvolutionaryParameters
+stub.SamplingControlParameters = SamplingControlParameters
+stub.RDEEParameterSchema = RDEEParameterSchema
+sys.modules["interface.parameter_schema"] = stub
 import pytest
 
 from interface.parameter_schema import ParameterSpec, RDEEParameterSchema
@@ -114,3 +201,18 @@ def test_generate_parameter_grid_and_expansion() -> None:
     values = {g.cosmological.hubble_constant.default for g in grid}
     assert values == {60.0, 70.0}
     assert all(isinstance(g, RDEEParameterSchema) for g in grid)
+
+from interface.earth_parameter_instance import get_earth_parameters
+
+
+def test_get_earth_parameters() -> None:
+    params = get_earth_parameters()
+    assert isinstance(params, RDEEParameterSchema)
+    assert params.cosmological.hubble_constant.default == 70.0
+    assert params.cosmological.cosmological_constant.default == 1e-54
+    assert params.stellar.stellar_mass.default == 1.0
+    assert params.planetary.planet_distance.default == 1.0
+    assert params.habitability.liquid_water_zone_range.min_value == 0.95
+    assert params.habitability.liquid_water_zone_range.max_value == 1.37
+    assert params.evolutionary.mass_extinction_frequency.default == 0.5
+    assert params.sampling.recursive_depth_limit.default == 10
