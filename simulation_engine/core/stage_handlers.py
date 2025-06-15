@@ -203,7 +203,10 @@ def evaluate_evolutionary(parameters: RDEEParameterSchema) -> bool:
     if not threshold_pass(complexity.default, complexity.min_value, complexity.max_value):
         return False
 
-    if not scaled_fragility(fragility.default):
+    ok_thresh = complexity.default
+    frag_mult = fragility.default
+    ok_frag = scaled_fragility(ok_thresh, frag_mult)
+    if not ok_frag:
         return False
 
     if extinction.default is not None:
