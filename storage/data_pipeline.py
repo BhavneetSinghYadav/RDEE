@@ -4,18 +4,15 @@ from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass, fields
 from typing import Any, Dict, Tuple, Type, TypeVar
+import dataclasses
 import os
 import json
 import h5py
+import interface.parameter_schema as schema_module
 
 from interface.parameter_schema import RDEEParameterSchema, ParameterSpec
 
 T = TypeVar("T")
-
-
-def _type_to_string(tp: Type[Any]) -> str:
-    """Convert a Python type to its string representation."""
-    return tp.__name__
 
 
 def _string_to_type(name: str) -> Type[Any]:
@@ -24,36 +21,57 @@ def _string_to_type(name: str) -> Type[Any]:
     return mapping.get(name, str)
 
 
+def _spec_to_dict(spec: ParameterSpec) -> dict:
+    """Convert :class:`ParameterSpec` to a JSON-friendly dictionary."""
+    d = dataclasses.asdict(spec)
+    d["dtype"] = spec.dtype.__name__
+    return d
+
+
+def _schema_to_dict(obj: Any) -> Any:
+    """Recursively convert nested dataclasses to dictionaries."""
+    if is_dataclass(obj):
+        if isinstance(obj, ParameterSpec):
+            return _spec_to_dict(obj)
+        return {f.name: _schema_to_dict(getattr(obj, f.name)) for f in fields(obj)}
+    return obj
+
+
 def _dataclass_to_dict(obj: Any) -> Dict[str, Any]:
-    """Convert dataclass object to a fully serializable dictionary."""
+    """Backward-compatible wrapper for dataclass conversion."""
     if not is_dataclass(obj):
         raise TypeError("Object for serialization must be a dataclass instance")
+    return _schema_to_dict(obj)
 
-    def _convert(value: Any) -> Any:
-        if is_dataclass(value):
-            return {k: _convert(v) for k, v in asdict(value).items()}
-        if isinstance(value, type):
-            return _type_to_string(value)
-        return value
 
-    return {k: _convert(v) for k, v in asdict(obj).items()}
+def _dict_to_schema(d: Dict[str, Any]) -> RDEEParameterSchema:
+    """Convert a dictionary back into :class:`RDEEParameterSchema`."""
+
+    def _build(cls: Type[Any], data: Dict[str, Any]) -> Any:
+        if cls is ParameterSpec:
+            conv = dict(data)
+            dt = conv.get("dtype")
+            if isinstance(dt, str):
+                conv["dtype"] = _string_to_type(dt)
+            return ParameterSpec(**conv)
+        kwargs: Dict[str, Any] = {}
+        for f in fields(cls):
+            value = data.get(f.name)
+            field_type = f.type
+            if isinstance(field_type, str):
+                field_type = getattr(schema_module, field_type, None)
+            if field_type and is_dataclass(field_type):
+                kwargs[f.name] = _build(field_type, value)
+            else:
+                kwargs[f.name] = value
+        return cls(**kwargs)
+
+    return _build(RDEEParameterSchema, d)
 
 
 def _dict_to_dataclass(data: Dict[str, Any], cls: Type[T]) -> T:
-    """Reconstruct dataclass `cls` from dictionary data."""
-    kwargs: Dict[str, Any] = {}
-    for field in fields(cls):
-        value = data.get(field.name)
-        if value is None:
-            kwargs[field.name] = None
-            continue
-        if is_dataclass(field.type):
-            kwargs[field.name] = _dict_to_dataclass(value, field.type)  # type: ignore[arg-type]
-        elif field.type is Type[Any] or field.type is type:
-            kwargs[field.name] = _string_to_type(value)
-        else:
-            kwargs[field.name] = value
-    return cls(**kwargs)  # type: ignore[return-value]
+    """Backward-compatible wrapper for dataclass reconstruction."""
+    return _dict_to_schema(data)  # type: ignore[return-value]
 
 
 def _write_json_dataset(group: h5py.Group, name: str, obj: Any) -> None:
@@ -101,7 +119,7 @@ def save_simulation_run(
     os.makedirs(output_dir, exist_ok=True)
     file_path = os.path.join(output_dir, f"{run_id}.h5")
 
-    param_dict = _dataclass_to_dict(parameters)
+    param_dict = _schema_to_dict(parameters)
     param_json = json.dumps(param_dict)
     result_json = json.dumps(result)
 
@@ -145,5 +163,5 @@ def load_simulation_run(run_id: str, output_dir: str) -> Tuple[RDEEParameterSche
     param_dict = json.loads(param_data)
     result = json.loads(result_data)
 
-    parameters = _schema_dict_to_object(param_dict)
+    parameters = _dict_to_schema(param_dict)
     return parameters, result
