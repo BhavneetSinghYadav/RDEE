@@ -90,6 +90,7 @@ stub.SamplingControlParameters = SamplingControlParameters
 stub.RDEEParameterSchema = RDEEParameterSchema
 sys.modules["interface.parameter_schema"] = stub
 import pytest
+from dataclasses import replace
 
 from interface.parameter_schema import ParameterSpec, RDEEParameterSchema
 from interface.user_input import load_user_parameters, recursive_update
@@ -124,7 +125,9 @@ def test_schema_instantiation_and_defaults() -> None:
 def test_schema_clone_independence() -> None:
     schema = RDEEParameterSchema()
     clone = schema.clone()
-    clone.stellar.stellar_mass.default = 2.5
+    clone.stellar.stellar_mass = replace(
+        clone.stellar.stellar_mass, default=2.5
+    )
     assert schema.stellar.stellar_mass.default == 1.0
     assert clone.stellar.stellar_mass.default == 2.5
 
@@ -132,7 +135,9 @@ def test_schema_clone_independence() -> None:
 def test_schema_instances_are_independent() -> None:
     first = RDEEParameterSchema()
     second = RDEEParameterSchema()
-    first.cosmological.hubble_constant.default = 65.0
+    first.cosmological.hubble_constant = replace(
+        first.cosmological.hubble_constant, default=65.0
+    )
     assert second.cosmological.hubble_constant.default == 70.0
 
 

@@ -20,6 +20,7 @@ def _patched_dataclass(*args: Any, **kwargs: Any):
 dataclasses.dataclass = _patched_dataclass  # type: ignore[assignment]
 
 from storage.data_pipeline import save_simulation_run, load_simulation_run
+from dataclasses import replace
 from interface.parameter_schema import RDEEParameterSchema, ParameterSpec
 import interface.parameter_schema as schema_module
 
@@ -102,7 +103,9 @@ def test_save_simulation_run_overwrite(tmp_path: Path) -> None:
     save_simulation_run(run_id, params1, result1, str(tmp_path))
 
     params2 = params1.clone()
-    params2.cosmological.hubble_constant.default = 71.0
+    params2.cosmological.hubble_constant = replace(
+        params2.cosmological.hubble_constant, default=71.0
+    )
     result2 = {"value": 2}
     save_simulation_run(run_id, params2, result2, str(tmp_path))
 

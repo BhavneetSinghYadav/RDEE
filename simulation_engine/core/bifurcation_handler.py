@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Bifurcation control utilities for the RDEE recursion core."""
 
-from dataclasses import fields, is_dataclass
+from dataclasses import fields, is_dataclass, replace
 from typing import Any, List, Optional
 import copy
 import random
@@ -88,17 +88,22 @@ def perturb_schema(
 
     schema_copy = copy.deepcopy(base_schema)
 
-    def _apply(obj: Any) -> None:
+    def _apply(obj: Any, parent: Any | None, name: str | None) -> None:
         if isinstance(obj, ParameterSpec):
             if obj.min_value is None and obj.max_value is None:
                 return
-            obj.default = perturb_parameter(obj, perturbation_scale, rng)
+            new_spec = replace(
+                obj,
+                default=perturb_parameter(obj, perturbation_scale, rng),
+            )
+            if parent is not None and name is not None:
+                setattr(parent, name, new_spec)
             return
         if is_dataclass(obj):
             for field in fields(obj):
-                _apply(getattr(obj, field.name))
+                _apply(getattr(obj, field.name), obj, field.name)
 
-    _apply(schema_copy)
+    _apply(schema_copy, None, None)
     return schema_copy
 
 

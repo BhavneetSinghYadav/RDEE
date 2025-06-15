@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import is_dataclass
+from dataclasses import is_dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -60,7 +60,8 @@ def recursive_update(dataclass_obj: Any, update_dict: dict) -> None:
                     f"Value for '{key}' above maximum of {attr.max_value}"
                 )
 
-            attr.default = cast_value
+            new_spec = replace(attr, default=cast_value)
+            setattr(dataclass_obj, key, new_spec)
         elif is_dataclass(attr):
             if not isinstance(value, dict):
                 raise TypeError(

@@ -6,15 +6,17 @@ integrate with the lower level sampling controller.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Dict, List
 
 from interface.parameter_schema import RDEEParameterSchema, ParameterSpec
 from sampling import sampling_controller
+from sampling.sampling_controller import _sample_dataclass
 
 
-def _resolve_spec(path: str) -> ParameterSpec:
+def _resolve_spec(schema: RDEEParameterSchema, path: str) -> ParameterSpec:
     """Resolve a ``ParameterSpec`` object from ``RDEEParameterSchema`` via dot path."""
-    current: Any = RDEEParameterSchema()
+    current: Any = schema
     for part in path.split("."):
         if not hasattr(current, part):
             raise KeyError(f"Invalid parameter path: {path}")
@@ -40,22 +42,23 @@ def generate_batch_samples(batch_size: int, sample_config: Dict[str, Dict[str, f
     List[RDEEParameterSchema]
         Newly sampled parameter schemas.
     """
-    overrides: List[tuple[ParameterSpec, float | None, float | None]] = []
+    if not sample_config:
+        return sampling_controller.generate_initial_samples(batch_size)
 
-    if sample_config:
-        for path, bounds in sample_config.items():
-            spec = _resolve_spec(path)
-            overrides.append((spec, spec.min_value, spec.max_value))
-            if "min" in bounds:
-                spec.min_value = bounds["min"]
-            if "max" in bounds:
-                spec.max_value = bounds["max"]
+    base = RDEEParameterSchema()
+    for path, bounds in sample_config.items():
+        spec = _resolve_spec(base, path)
+        new_min = bounds.get("min", spec.min_value)
+        new_max = bounds.get("max", spec.max_value)
+        parent: Any = base
+        parts = path.split(".")
+        for part in parts[:-1]:
+            parent = getattr(parent, part)
+        field = parts[-1]
+        setattr(parent, field, replace(spec, min_value=new_min, max_value=new_max))
 
-    try:
-        samples = sampling_controller.generate_initial_samples(batch_size)
-    finally:
-        for spec, old_min, old_max in overrides:
-            spec.min_value = old_min
-            spec.max_value = old_max
+    samples: List[RDEEParameterSchema] = []
+    for _ in range(batch_size):
+        samples.append(_sample_dataclass(base))
 
     return samples

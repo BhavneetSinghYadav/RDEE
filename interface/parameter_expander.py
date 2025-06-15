@@ -3,6 +3,7 @@ from __future__ import annotations
 """Utilities for expanding parameter sweep configurations."""
 
 from copy import deepcopy
+from dataclasses import replace
 from itertools import product
 from typing import Any, List
 
@@ -67,7 +68,7 @@ def set_nested_field(dataclass_obj: Any, field_path: str, value: Any) -> None:
         if is_last:
             attr = getattr(current, part)
             if isinstance(attr, ParameterSpec) and len(parts) - idx == 1:
-                attr.default = value
+                setattr(current, part, replace(attr, default=value))
             else:
                 setattr(current, part, value)
         else:
