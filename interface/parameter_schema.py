@@ -5,7 +5,7 @@ from typing import Optional, Type
 import copy
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ParameterSpec:
     """Metadata container for a simulation parameter."""
 
